@@ -2,14 +2,19 @@
 
 listen()
 {
+  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
+
+  local cmd='listen.sh'
   local temp=$(mktemp)
+  local pids=($(ps alxwww | egrep "${cmd}" | egrep -v grep | awk '{ print $1 }'))
+  if [ ${#pids[@]} -gt 0 ] && [ ${pids} != 0 ]; then kill -9 ${pids[@]} &> /dev/stderr; fi
 
   while true; do
     if [ "${DEBUG:-false}" = 'true' ]; then echo "Waiting" &> /dev/stderr; fi
     mosquitto_sub -C 1 -h ${MQTT_HOST} -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -t "${MQTT_TOPIC}" > ${temp}
     if [ -s ${temp} ] && [ $(jq '.image!=null' ${temp}) = 'true' ]; then
       if [ "${DEBUG:-false}" = 'true' ]; then echo "Displaying" &> /dev/stderr; fi
-      curl -qsSL -d @${temp} ${OLED_URL}/display/picture
+      curl -qsSL -d @${temp} ${OLED_URL}/display/picture &> /dev/null
     else
       if [ "${DEBUG:-false}" = 'true' ]; then echo "Skipping" &> /dev/stderr; fi
     fi
@@ -18,6 +23,8 @@ listen()
 
 prerequisites()
 {
+  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
+
   local commands=${*}
   local missing=()
 

@@ -6,6 +6,7 @@ import json
 import subprocess
 import threading
 import time
+import os
 
 import RPi.GPIO as GPIO
 import OLED_Driver as OLED
@@ -207,10 +208,14 @@ def displayPicture():
 ### MAIN
 ###
 
+# service variables
+OLED_PORT=os.environ("OLED_PORT")
+OLED_HOST=os.environ("OLED_HOST")
+
 try:
   if __name__ == '__main__':
     OLED.Device_Init()
-    webapp.run(debug=False,host='0.0.0.0',port=7777)
+    webapp.run(debug=False,host=OLED_PORT,port=OLED_PORT)
 
 except:
   OLED.Clear_Screen()

@@ -1,7 +1,9 @@
-#!/bin/bash -x
+#!/bin/bash
 
 has_commands()
 {
+  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
+
   local cmds=${*}
   local missing=()
 
@@ -15,6 +17,8 @@ has_commands()
 
 server()
 {
+  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
+
   local cmd="python3 ${0%/*}/../spi/python/server.py"
 
   local pids=($(ps alxwww | egrep "${cmd}" | egrep -v grep | awk '{ print $1 }'))
@@ -34,24 +38,30 @@ server()
 
 has_groups()
 {
-  local need=${*}
-  local missing=(${need:-})
+  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
+
+  local nessed=${*}
+  local missing=()
   local has=($(groups ${USER} | awk -F: '{ print $2 }'))
 
   if [ ${#has[@]} -gt 0 ]; then
-    missing=
     for v in ${need}; do
       local match=false
+
       for g in ${has[@]}; do
         if [ "${v}" = "${g}" ]; then
+          if [ "${DEBUG:-false}" = 'true' ]; then echo "FOUND: ${v}" &> /dev/stderr; fi
           match=true
           break
         fi
       done
       if [ "${match:-false}" = 'false' ]; then
+        if [ "${DEBUG:-false}" = 'true' ]; then echo "MISSING: ${v}" &> /dev/stderr; fi
         missing=(${missing[@]:-} ${v})
       fi
     done
+  else
+    missing=(${need})
   fi
   echo "${missing[@]}"
 }

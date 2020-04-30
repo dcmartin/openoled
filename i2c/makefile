@@ -2,30 +2,18 @@
 # makefile
 ###
 
-VERSION := 0.0.1
+OBJ := oled96.o fonts.o
 
-LOCAL_IP_ADDRESS := $(shell hostname -I | awk '{ print $$1 }')
+all: main oled
 
-all: run
+oled: oled.o $(OBJ)
+	gcc $^ -lm -lpthread -o $@
 
-stop:
-	-docker stop oled
+main: main.o $(OBJ)
+	gcc $^ -lm -lpthread -o $@
 
-remove: stop
-	-docker rm -f oled
+.c.o:
+	gcc -c -O2 -s -DNDENUG -Wall $<
 
-run: remove build
-	docker run \
-	  -d \
-          -e LOCAL_IP_ADDRESS=$(LOCAL_IP_ADDRESS) \
-	  --privileged \
-          --name oled \
-	  --restart unless-stopped \
-          --net=host \
-          ${USER}/oled:${VERSION}
-
-build:
-	docker build -t ${USER}/oled:${VERSION} .
-
-push: build
-	docker push ${USER}/oled:${VERSION}
+clean:
+	rm -f *.o oled main

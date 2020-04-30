@@ -7,6 +7,10 @@ import subprocess
 import threading
 import time
 import os
+import sys
+import base64
+
+from io import BytesIO
 
 import RPi.GPIO as GPIO
 import OLED_Driver as OLED
@@ -170,10 +174,56 @@ def Test_Picture():
   Display_Picture("picture4.jpg")
   return ('{"success": true}}\n' % ())
 
-## POST
+## LIBRARIES
 
-import base64
-from io import BytesIO
+def displayImage(b64data):
+  imageBytes = base64.b64decode(b64data)
+  if imageBytes != 'null':
+    stream = BytesIO(imageBytes)
+    if stream != 'null':
+      image = Image.open(stream).convert("RGBA")
+      if image != 'null':
+        imageSmall = image.resize((128, 128), Image.ANTIALIAS)
+        if imageSmall != 'null':
+          OLED.Display_Image(imageSmall)
+          return true
+        else:
+          return null
+      else:
+        return null
+    else:
+      return null
+  else:
+    return null
+
+def displayEvent(json_data):
+  event = json_data['event']
+  line1 = 'EVENT NULL'
+  line2 = 'No person detected'
+  line3 = 'Nothing annotated'
+  if event != 'null':
+    group = event['group']
+    device = event['device']
+    camera = event['camera']
+    line1 = group + '/' + device + '/' + camera
+  count = json_data['count']
+  if count != 'null':
+    line3 = 'Annotated ' + count + ' entity(s)'
+    detected = json_data['detected']
+    if detected != 'null':
+      person = 'null'
+      for sub in detected:
+        if sub['person'] > 0:
+          person = sub
+          break
+      if person != 'null':
+        number = person['count']
+        line2 = 'Found ' + number + ' person'
+  command = os.environ("PWD") + '/i2c/src/oled "' + line1 + '" "' + line2 + '" "' + line3 + '"'
+  os.system(command)
+  return true
+
+## POST
 
 @webapp.route("/oled/v1/display/picture", methods=['POST'])
 def displayPicture():
@@ -204,18 +254,48 @@ def displayPicture():
   else:
     return ('{"error": "no JSON data received"}\n' % ())
 
+@webapp.route("/oled/v1/display/annotated", methods=['POST'])
+def displayAnnotated():
+  json_data = request.get_json(force=True)
+  if json_data != 'null':
+    result = displayEvent(json_data)
+    if result != 'null':
+      b64data = json_data['image']
+      if b64data != 'null':
+        result = displayImage(b64data)
+        if result != 'true':
+          return ('{"error": "failed to displayImage"}\n' % ())
+        else:
+          return ('{"success": true}\n' % ())
+      else:
+        return ('{"error": "No BASE64 data"}\n' % ())
+    else:
+      return ('{"error": "failed to displayEvent"}\n' % ())
+  else:
+    return ('{"error": "No JSON data"}\n' % ())
+
+###
 ###
 ### MAIN
 ###
 
-# service variables
-OLED_PORT=os.environ("OLED_PORT")
-OLED_HOST=os.environ("OLED_HOST")
-
 try:
   if __name__ == '__main__':
+    narg = len(sys.argv)
+    if narg > 1:
+      host = sys.argv[1]
+    else:
+      host=os.environ("OLED_HOST")
+    if len(host) == 0:
+      host = "127.0.0.1"
+    if narg > 2:
+      port = sys.argv[2]
+    else:
+      port=os.environ("OLED_PORT")
+    if len(port) == 0:
+      port=7777
     OLED.Device_Init()
-    webapp.run(debug=False,host=OLED_PORT,port=OLED_PORT)
+    webapp.run(debug=False,host=host,port=port)
 
 except:
   OLED.Clear_Screen()

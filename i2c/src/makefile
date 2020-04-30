@@ -2,16 +2,18 @@
 # makefile
 ###
 
-OBJ := oled.o oled96.o fonts.o
+OBJ := oled96.o fonts.o
 
-all: oled
+all: main oled
 
-oled: $(OBJ)
-	gcc ${OBJ} -lm -lpthread -o $@
+oled: oled.o $(OBJ)
+	gcc $^ -lm -lpthread -o $@
 
+main: main.o $(OBJ)
+	gcc $^ -lm -lpthread -o $@
 
 .c.o:
 	gcc -c -O2 -s -DNDENUG -Wall $<
 
 clean:
-	rm -f *.o oled
+	rm -f *.o oled main

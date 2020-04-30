@@ -11,7 +11,7 @@ OBJ_O = $(patsubst %.c,${DIR_BIN}/%.o,$(notdir ${OBJ_C}))
 
 CC := gcc
 
-CFLAGS := -g -O0 -Wall
+CFLAGS := -g -Wall
 
 # USELIB = USE_WIRINGPI_LIB
 # USELIB = USE_DEV_LIB
@@ -29,7 +29,7 @@ TARGET += main
 CFLAGS += -D$(USELIB)
 LIB += -lm
 
-default: ${TARGET}
+all: ${TARGET}
 
 wiringpi:
 	sudo apt install -qq -y wiringpi

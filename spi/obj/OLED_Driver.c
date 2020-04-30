@@ -312,12 +312,12 @@ int Device_Init(void) {
 #elif INTERFACE_4WIRE_SPI
       
     #ifdef USE_BCM2835_LIB
-        bcm2835_spi_begin();                                         //Start spi interface, set spi pin for the reuse function
-        bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);     //1 first transmission
-        bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                  //spi mode 0
-        bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);  //Frequency
-        bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                     //set CE0
-        bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, 0);     //enable cs0
+        //bcm2835_spi_begin();                                         //Start spi interface, set spi pin for the reuse function
+        //bcm2835_spi_setBitOrder(BCM2835_SPI_BIT_ORDER_MSBFIRST);     //1 first transmission
+        //bcm2835_spi_setDataMode(BCM2835_SPI_MODE0);                  //spi mode 0
+        //bcm2835_spi_setClockDivider(BCM2835_SPI_CLOCK_DIVIDER_128);  //Frequency
+        //bcm2835_spi_chipSelect(BCM2835_SPI_CS0);                     //set CE0
+        //bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, 0);     //enable cs0
         
     #elif USE_WIRINGPI_LIB  
         wiringPiSPISetupMode(0, 9000000, 0);

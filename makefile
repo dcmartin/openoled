@@ -2,7 +2,7 @@
 # makefile
 ###
 
-default: server.json
+default: server.sh.json
 
 all: default listen test
 
@@ -14,13 +14,13 @@ i2c:
 spi:
 	make -C spi all
 
-server.json: libs
-	./sh/server.sh | tee server.json
+server.sh.json: libs
+	./sh/server.sh
 
 listen:
 	./sh/listen.sh
 
-test: server.json
+test: server.sh.json
 	export URL=$(shell jq -r '.endpoints[]|select(.name=="display/picture").url' $^) \
 	  && curl -v $${URL} -d @samples/event_annotated.json
 

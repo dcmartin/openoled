@@ -42,7 +42,7 @@ listen()
     if [ "${DEBUG:-false}" = 'true' ]; then echo "Waiting" &>> ${LOGTO}; fi
     mosquitto_sub -C 1 -h ${MQTT_HOST} -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -t "${MQTT_TOPIC}" > ${temp}
     if [ -s ${temp} ] && [ $(jq '.image!=null' ${temp}) = 'true' ]; then
-      if [ "${DEBUG:-false}" = 'true' ]; then echo "Displaying" &> /dev/stderr; fi
+      if [ "${DEBUG:-false}" = 'true' ]; then echo "Displaying" &>> ${LOGTO}; fi
       curl -qsSL -d @${temp} ${OLED_URL}/display/annotated &>> ${LOGTO}
     else
       if [ "${DEBUG:-false}" = 'true' ]; then echo "Skipping" &>> ${LOGTO}; fi

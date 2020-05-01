@@ -4,7 +4,7 @@
 
 default: server.sh.json
 
-all: default listen test
+all: default listen.sh.json test
 
 libs: i2c spi
 
@@ -17,8 +17,11 @@ spi:
 server.sh.json: libs
 	./sh/server.sh
 
-listen:
+listen.sh.json:
 	./sh/listen.sh
+
+logs:
+	tail -f $(jq -r '.debug.logto' listen.sh.json) $(jq -r '.debug.logto' server.sh.json)
 
 test: server.sh.json
 	export URL=$(shell jq -r '.endpoints[]|select(.name=="display/picture").url' $^) \

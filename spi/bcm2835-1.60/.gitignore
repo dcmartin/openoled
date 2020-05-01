@@ -3,5 +3,4 @@ Makefile
 autom4te.cache
 config.log
 config.status
-setup.sh
 stamp-h1

@@ -1,31 +1,8 @@
 #!/bin/bash
 
-listen()
-{
-  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
-
-  local cmd="${0}"
-  local temp=$(mktemp)
-  local pids=($(ps alxwww | egrep "${cmd}" | egrep -v grep | egrep -v "$$" | awk '{ print $2 }'))
-  if [ ${#pids[@]} -gt 0 ]; then
-     if [ "${DEBUG:-false}" = 'true' ]; then echo "For command: ${cmd}; killing PIDS: ${pids[@]}; this: $$" &> /dev/stderr; fi
-     #kill -9 ${pids[@]} &> /dev/stderr
-     for i in ${pids[@]}; do
-       echo "${i}:" $(ps alxwww | egrep "${i}") &> /dev/stderr
-     done
-  fi
-
-  while true; do
-    if [ "${DEBUG:-false}" = 'true' ]; then echo "Waiting" &> /dev/stderr; fi
-    mosquitto_sub -C 1 -h ${MQTT_HOST} -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -t "${MQTT_TOPIC}" > ${temp}
-    if [ -s ${temp} ] && [ $(jq '.image!=null' ${temp}) = 'true' ]; then
-      if [ "${DEBUG:-false}" = 'true' ]; then echo "Displaying" &> /dev/stderr; fi
-      curl -qsSL -d @${temp} ${OLED_URL}/display/picture &> /dev/null
-    else
-      if [ "${DEBUG:-false}" = 'true' ]; then echo "Skipping" &> /dev/stderr; fi
-    fi
-  done
-}
+###
+### FUNCTIONS
+###
 
 has_commands()
 {
@@ -40,6 +17,35 @@ has_commands()
     fi
   done
   echo "${missing[@]}"
+}
+
+## PRIMARY
+listen()
+{
+  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
+
+  local cmd="${0}"
+  local temp=$(mktemp)
+
+  local pids=($(ps alxwww | egrep "${cmd##*/}" | egrep -v grep | egrep -v "$$" | awk '{ print $3 }'))
+  if [ ${#pids[@]} -gt 0 ]; then
+     if [ "${DEBUG:-false}" = 'true' ]; then echo "For command: ${cmd}; killing PIDS: ${pids[@]}; this: $$" &> /dev/stderr; fi
+     for i in ${pids[@]}; do
+       if [ "${DEBUG:-false}" = 'true' ]; then ps "${i}" | tail +2 &> /dev/stderr; fi
+       if [ "${PIDKILL:-false}" = 'true' ]; then kill -9 ${i} &> /dev/stderr; fi
+     done
+  fi
+
+  while true; do
+    if [ "${DEBUG:-false}" = 'true' ]; then echo "Waiting" &> /dev/stderr; fi
+    mosquitto_sub -C 1 -h ${MQTT_HOST} -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -t "${MQTT_TOPIC}" > ${temp}
+    if [ -s ${temp} ] && [ $(jq '.image!=null' ${temp}) = 'true' ]; then
+      if [ "${DEBUG:-false}" = 'true' ]; then echo "Displaying" &> /dev/stderr; fi
+      curl -qsSL -d @${temp} ${OLED_URL}/display/picture &> /dev/null
+    else
+      if [ "${DEBUG:-false}" = 'true' ]; then echo "Skipping" &> /dev/stderr; fi
+    fi
+  done
 }
 
 ###

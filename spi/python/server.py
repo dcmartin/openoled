@@ -283,19 +283,19 @@ try:
   if __name__ == '__main__':
     narg = len(sys.argv)
     if narg > 1:
-      host = sys.argv[1]
+      arg1 = sys.argv[1]
     else:
-      host=os.environ("OLED_HOST")
-    if len(host) == 0:
-      host = "127.0.0.1"
+      arg1=os.environ("OLED_HOST")
+    if len(arg1) < 1:
+      arg1 = "127.0.0.1"
     if narg > 2:
-      port = sys.argv[2]
+      arg2 = sys.argv[2]
     else:
-      port=os.environ("OLED_PORT")
-    if len(port) == 0:
-      port=7777
+      arg2=os.environ("OLED_PORT")
+    if len(arg2) < 1:
+      arg2=7777
     OLED.Device_Init()
-    webapp.run(debug=False,host=host,port=port)
+    webapp.run(debug=False,host=arg1,port=arg2)
 
 except:
   OLED.Clear_Screen()

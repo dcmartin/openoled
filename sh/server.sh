@@ -1,5 +1,10 @@
 #!/bin/bash
 
+###
+### FUNCTIONS
+###
+
+## test for commands
 has_commands()
 {
   if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
@@ -15,27 +20,7 @@ has_commands()
   echo "${missing[@]}"
 }
 
-server()
-{
-  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
-
-  local cmd="python3 ${0%/*}/../spi/python/server.py"
-
-  local pids=($(ps alxwww | egrep "${cmd}" | egrep -v grep | awk '{ print $1 }'))
-  if [ ${#pids[@]} -gt 0 ] && [ ${pids} != 0 ]; then kill -9 ${pids[@]} &> /dev/stderr; fi
-
-  export \
-    OLED_HOST=${OLED_HOST} \
-    OLED_PORT=${OLED_PORT} \
-    && \
-    ${cmd} &> /dev/stderr &
-  echo '{"pid":'"$!"'}'
-}
-
-###
-### MAIN
-###
-
+## test for group privileges
 has_groups()
 {
   if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
@@ -66,6 +51,30 @@ has_groups()
   echo "${missing[@]}"
 }
 
+## PRIMARY
+server()
+{
+  if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
+
+  local cmd="python3 ${0%/*}/../spi/python/server.py"
+
+  local pids=($(ps alxwww | egrep "${cmd##*/}" | egrep -v grep | egrep -v "$$" | awk '{ print $3 }'))
+  if [ ${#pids[@]} -gt 0 ]; then
+     if [ "${DEBUG:-false}" = 'true' ]; then echo "For command: ${cmd}; killing PIDS: ${pids[@]}; this: $$" &> /dev/stderr; fi
+     for i in ${pids[@]}; do
+       if [ "${DEBUG:-false}" = 'true' ]; then echo "${i}:" $(ps "${i}" | tail +2) &> /dev/stderr; fi
+       if [ "${PIDKILL:-false}" = 'true' ]; then kill -9 ${i} &> /dev/stderr; fi
+     done
+  fi
+
+  ${cmd} ${OLED_HOST} ${OLED_PORT} &> /dev/stderr &
+  echo '{"name":"'${cmd}'","pid":'"$!"'}'
+}
+
+###
+### PARAMETERS
+###
+
 ## DEBUG
 if [ -z "${DEBUG:-}" ] && [ -s DEBUG ]; then DEBUG=$(cat DEBUG); fi; DEBUG=${DEBUG:-false}
 if [ -z "${LOG_LEVEL:-}" ] && [ -s LOG_LEVEL ]; then LOG_LEVEL=$(cat LOG_LEVEL); fi; LOG_LEVEL=${LOG_LEVEL:-info}
@@ -94,13 +103,15 @@ if [ -z "${MQTT_TOPIC:-}" ] && [ -s MQTT_TOPIC ]; then MQTT_TOPIC=$(cat MQTT_TOP
 MQTT='{"host":"'${MQTT_HOST}'","port":'${MQTT_PORT}',"username":"'${MQTT_USERNAME}'","password":"'${MQTT_PASSWORD}'","topic":"'${MQTT_TOPIC}'"}'
 
 
-## DOIT
+###
+### MAIN
+###
 
 missing=$(has_groups i2c spi gpio video)
 if [ -z "${missing:-}" ]; then
   missing=$(has_commands python3 curl)
   if [ -z "${missing:-}" ]; then
-    echo $(server ${*}) | jq '.op="POST"|.url="'${OLED_URL}/display/picture'"'
+    echo $(server ${*}) | jq '.endpoints=[{"op":"POST","url":"'${OLED_URL}/display/picture'"}]'
   else
     echo "Commands: [ ${missing} ] missing; install" &> /dev/stderr
     exit 1

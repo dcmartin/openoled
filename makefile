@@ -2,7 +2,9 @@
 # makefile
 ###
 
-default: server.json test listen.json
+default: server.json
+
+all: default listen test
 
 libs: i2c spi
 
@@ -15,13 +17,12 @@ spi:
 server.json: libs
 	./sh/server.sh | tee server.json
 
+listen:
+	./sh/listen.sh
 
 test: server.json
 	export URL=$(shell jq -r '.endpoints[]|select(.name=="display/picture").url' $^) \
 	  && curl -v $${URL} -d @samples/event_annotated.json
-
-listen.json:
-	./sh/listen.sh | tee listen.json
 
 tidy:
 	rm -f *.sh.*.out
@@ -31,4 +32,4 @@ clean:
 	make -C i2c clean
 	make -C spi clean
 
-.PHONY: i2c spi test clean tidy
+.PHONY: i2c spi test clean tidy listen

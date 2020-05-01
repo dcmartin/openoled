@@ -25,7 +25,7 @@ has_groups()
 {
   if [ "${DEBUG:-false}" = 'true' ]; then echo "${FUNCNAME[0]} ${*}" &> /dev/stderr; fi
 
-  local nessed=${*}
+  local need=${*}
   local missing=()
   local has=($(groups ${USER} | awk -F: '{ print $2 }'))
 

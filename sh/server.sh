@@ -70,8 +70,8 @@ server()
      fi
   fi
 
-  ${cmd} ${OLED_HOST} ${OLED_PORT} &> ${0##*/}.out &
-  echo '{"name":"'${cmd}'","pid":'"$!"'}'
+  ${cmd} ${OLED_HOST} ${OLED_PORT} &> ${0##*/}.$$.out &
+  echo '{"name":"'${cmd}'","logto":"'${0##*/}.$$.out'","pid":'"$!"'}'
 }
 
 ###

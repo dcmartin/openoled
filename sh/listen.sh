@@ -39,13 +39,13 @@ listen()
   fi
 
   while true; do
-    if [ "${DEBUG:-false}" = 'true' ]; then echo "Waiting" &> /dev/stderr; fi
+    if [ "${DEBUG:-false}" = 'true' ]; then echo "Waiting" &>> ${LOGTO}; fi
     mosquitto_sub -C 1 -h ${MQTT_HOST} -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -t "${MQTT_TOPIC}" > ${temp}
     if [ -s ${temp} ] && [ $(jq '.image!=null' ${temp}) = 'true' ]; then
       if [ "${DEBUG:-false}" = 'true' ]; then echo "Displaying" &> /dev/stderr; fi
-      curl -qsSL -d @${temp} ${OLED_URL}/display/picture &> /dev/null
+      curl -qsSL -d @${temp} ${OLED_URL}/display/annotated &>> ${LOGTO}
     else
-      if [ "${DEBUG:-false}" = 'true' ]; then echo "Skipping" &> /dev/stderr; fi
+      if [ "${DEBUG:-false}" = 'true' ]; then echo "Skipping" &>> ${LOGTO}; fi
     fi
   done
 }
@@ -57,7 +57,7 @@ listen()
 ## DEBUG
 if [ -z "${DEBUG:-}" ] && [ -s DEBUG ]; then DEBUG=$(cat DEBUG); fi; DEBUG=${DEBUG:-false}
 if [ -z "${LOG_LEVEL:-}" ] && [ -s LOG_LEVEL ]; then LOG_LEVEL=$(cat LOG_LEVEL); fi; LOG_LEVEL=${LOG_LEVEL:-info}
-if [ -z "${LOGTO:-}" ] && [ -s LOGTO ]; then LOGTO=$(cat LOGTO); fi; LOGTO=${LOGTO:-/dev/stderr}
+if [ -z "${LOGTO:-}" ] && [ -s LOGTO ]; then LOGTO=$(cat LOGTO); fi; LOGTO=${LOGTO:-${0##*/}.$$.out}
 LOG='{"debug":'${DEBUG}',"level":"'"${LOG_LEVEL}"'","logto":"'"${LOGTO}"'"}'
 
 ## OLED

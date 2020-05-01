@@ -48,11 +48,9 @@ def Test_Text():
     OLED.Display_Image(image)
     return ('{"success": true}\n' % ())
 
-@webapp.route("/oled/v1/test/pattern", methods=['GET'])
-def Test_Pattern():
+def testPattern():
     image = Image.new("RGB", (OLED.SSD1351_WIDTH, OLED.SSD1351_HEIGHT), "BLACK")
     draw = ImageDraw.Draw(image)
-    
     draw.line([(0,8), (127,8)],   fill = "RED",    width = 16)
     draw.line([(0,24),(127,24)],  fill = "YELLOW", width = 16)
     draw.line([(0,40),(127,40)],  fill = "GREEN",  width = 16)
@@ -61,8 +59,11 @@ def Test_Pattern():
     draw.line([(0,88),(127,88)],  fill = "MAGENTA",width = 16)
     draw.line([(0,104),(127,104)],fill = "BLACK",  width = 16)
     draw.line([(0,120),(127,120)],fill = "WHITE",  width = 16)
-    
     OLED.Display_Image(image)
+
+@webapp.route("/oled/v1/test/pattern", methods=['GET'])
+def Test_Pattern():
+    testPattern()
     return ('{"success": true}\n' % ())
 
 @webapp.route("/oled/v1/test/lines", methods=['GET'])
@@ -186,7 +187,7 @@ def displayImage(b64data):
         imageSmall = image.resize((128, 128), Image.ANTIALIAS)
         if imageSmall != 'null':
           OLED.Display_Image(imageSmall)
-          return true
+          return 'true'
         else:
           return null
       else:
@@ -196,32 +197,36 @@ def displayImage(b64data):
   else:
     return null
 
-def displayEvent(json_data):
-  event = json_data['event']
-  line1 = 'EVENT NULL'
-  line2 = 'No person detected'
-  line3 = 'Nothing annotated'
+def displayEvent(payload):
+  line1 = 'NO EVENT'
+  line2 = 'NO ENTITY'
+  line3 = 'NOTHING'
+
+  event = payload['event']
   if event != 'null':
     group = event['group']
     device = event['device']
     camera = event['camera']
-    line1 = group + '/' + device + '/' + camera
-  count = json_data['count']
-  if count != 'null':
-    line3 = 'Annotated ' + count + ' entity(s)'
-    detected = json_data['detected']
-    if detected != 'null':
-      person = 'null'
-      for sub in detected:
-        if sub['person'] > 0:
-          person = sub
-          break
-      if person != 'null':
-        number = person['count']
-        line2 = 'Found ' + number + ' person'
-  command = os.environ("PWD") + '/i2c/src/oled "' + line1 + '" "' + line2 + '" "' + line3 + '"'
+    line1 = str(camera)
+
+  detected = payload['detected']
+  if len(detected) > 0:
+    person = 'null'
+    for sub in detected:
+      if sub['entity'] == 'person':
+        person = sub
+        break
+    if person != 'null':
+      number = person['count']
+      line2 = 'person(s): ' + str(number)
+
+  count = payload['count']
+  if count != 'null' and int(count) > 0:
+    line3 = 'total: ' + str(count)
+
+  command = './i2c/oled ' + json.dumps(line1) + ' ' + json.dumps(line2) + ' ' + json.dumps(line3)
   os.system(command)
-  return true
+  return 'true'
 
 ## POST
 
@@ -296,7 +301,7 @@ try:
       arg2=7777
     OLED.Device_Init()
     OLED.Clear_Screen()
-    Test_Pattern
+    testPattern()
     webapp.run(debug=True,host=arg1,port=arg2)
 
 except:

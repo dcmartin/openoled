@@ -24,9 +24,10 @@ listen.json:
 	./sh/listen.sh | tee listen.json
 
 tidy:
-	rm -f *.sh.out *.sh.json
+	rm -f *.sh.*.out
 
 clean:
+	rm -f *.sh.json
 	make -C i2c clean
 	make -C spi clean
 

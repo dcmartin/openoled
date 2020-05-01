@@ -26,14 +26,16 @@ listen()
 
   local cmd="${0}"
   local temp=$(mktemp)
+  local pid
 
-  local pids=($(ps alxwww | egrep "${cmd##*/}" | egrep -v grep | egrep -v "$$" | awk '{ print $3 }'))
-  if [ ${#pids[@]} -gt 0 ]; then
-     if [ "${DEBUG:-false}" = 'true' ]; then echo "For command: ${cmd}; killing PIDS: ${pids[@]}; this: $$" &> /dev/stderr; fi
-     for i in ${pids[@]}; do
-       if [ "${DEBUG:-false}" = 'true' ]; then ps "${i}" | tail +2 &> /dev/stderr; fi
-       if [ "${PIDKILL:-false}" = 'true' ]; then kill -9 ${i} &> /dev/stderr; fi
-     done
+  if [ -e "${0##*/}.json" ]; then pid=$(jq -r '.pid' "${0##*/}.json"); else pid='null'; fi
+  if [ "${pid:-null}" != 'null' ]; then
+     local deets=$(ps ${pid} | tail +2 | egrep "${cmd##*/}")
+
+     if [ ! -z "${deets:-}" ]; then
+       if [ "${DEBUG:-false}" = 'true' ]; then echo "Killing existing PID: ${pid} for command: ${cmd##*/}; this: $$" &> /dev/stderr; fi
+       kill -9 ${pid} &> /dev/null
+     fi
   fi
 
   while true; do
@@ -81,9 +83,8 @@ MQTT='{"host":"'${MQTT_HOST}'","port":'${MQTT_PORT}',"username":"'${MQTT_USERNAM
 
 missing=$(has_commands mosquitto_sub curl jq)
 if [ -z "${missing:-}" ]; then
-  echo '{"name":"'${0}'","motion":'"${MOTION}"',"oled":'"${OLED}"',"mqtt":'"${MQTT}"',"debug":'"${LOG}"'}' | jq '.'
-  result=$(listen ${*})
-  exit ${result:-1}
+  listen ${*} &
+  echo '{"name":"'${0}'","pid":'$!',"motion":'"${MOTION}"',"oled":'"${OLED}"',"mqtt":'"${MQTT}"',"debug":'"${LOG}"'}' | jq '.' | tee ${0##*/}.json
 else
   echo "Commands: [ ${missing} ] missing; install" &> /dev/stderr
   exit 1

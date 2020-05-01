@@ -295,7 +295,9 @@ try:
     if len(arg2) < 1:
       arg2=7777
     OLED.Device_Init()
-    webapp.run(debug=False,host=arg1,port=arg2)
+    OLED.Clear_Screen()
+    Test_Pattern
+    webapp.run(debug=True,host=arg1,port=arg2)
 
 except:
   OLED.Clear_Screen()

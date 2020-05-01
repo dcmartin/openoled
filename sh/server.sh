@@ -58,16 +58,19 @@ server()
 
   local cmd="python3 ${0%/*}/../spi/python/server.py"
 
-  local pids=($(ps alxwww | egrep "${cmd##*/}" | egrep -v grep | egrep -v "$$" | awk '{ print $3 }'))
-  if [ ${#pids[@]} -gt 0 ]; then
-     if [ "${DEBUG:-false}" = 'true' ]; then echo "For command: ${cmd}; killing PIDS: ${pids[@]}; this: $$" &> /dev/stderr; fi
-     for i in ${pids[@]}; do
-       if [ "${DEBUG:-false}" = 'true' ]; then echo "${i}:" $(ps "${i}" | tail +2) &> /dev/stderr; fi
-       if [ "${PIDKILL:-false}" = 'true' ]; then kill -9 ${i} &> /dev/stderr; fi
-     done
+  local pid
+
+  if [ -e "${0##*/}.json" ]; then pid=$(jq -r '.pid' "${0##*/}.json"); else pid='null'; fi
+  if [ "${pid:-null}" != 'null' ]; then
+     local deets=$(ps ${pid} | tail +2 | egrep "${cmd##*/}")
+
+     if [ ! -z "${deets:-}" ]; then
+       if [ "${DEBUG:-false}" = 'true' ]; then echo "Killing existing PID: ${pid} for command: ${cmd##*/}; this: $$" &> /dev/stderr; fi
+       kill -9 ${pid} &> /dev/null
+     fi
   fi
 
-  ${cmd} ${OLED_HOST} ${OLED_PORT} &> /dev/stderr &
+  ${cmd} ${OLED_HOST} ${OLED_PORT} &> ${0##*/}.out &
   echo '{"name":"'${cmd}'","pid":'"$!"'}'
 }
 
@@ -76,7 +79,7 @@ server()
 ###
 
 ## DEBUG
-if [ -z "${DEBUG:-}" ] && [ -s DEBUG ]; then DEBUG=$(cat DEBUG); fi; DEBUG=${DEBUG:-false}
+if [ -z "${DEBUG:-}" ] && [ -s DEBUG ]; then DEBUG=$(cat DEBUG); fi; export DEBUG=${DEBUG:-false}
 if [ -z "${LOG_LEVEL:-}" ] && [ -s LOG_LEVEL ]; then LOG_LEVEL=$(cat LOG_LEVEL); fi; LOG_LEVEL=${LOG_LEVEL:-info}
 if [ -z "${LOGTO:-}" ] && [ -s LOGTO ]; then LOGTO=$(cat LOGTO); fi; LOGTO=${LOGTO:-/dev/stderr}
 LOG='{"debug":'${DEBUG}',"level":"'"${LOG_LEVEL}"'","logto":"'"${LOGTO}"'"}'
@@ -111,7 +114,7 @@ missing=$(has_groups i2c spi gpio video)
 if [ -z "${missing:-}" ]; then
   missing=$(has_commands python3 curl)
   if [ -z "${missing:-}" ]; then
-    echo $(server ${*}) | jq '.endpoints=[{"op":"POST","url":"'${OLED_URL}/display/picture'"}]'
+    echo $(server ${*}) | jq '.endpoints=[{"name":"display/picture","type":"application/json","request":"POST","url":"'${OLED_URL}/display/picture'"}]' | tee ${0##*/}.json
   else
     echo "Commands: [ ${missing} ] missing; install" &> /dev/stderr
     exit 1

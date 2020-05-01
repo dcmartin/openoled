@@ -210,7 +210,7 @@ def displayEvent(payload):
     line1 = str(camera)
 
   detected = payload['detected']
-  if len(detected) > 0:
+  if detected is not None and len(detected) > 0:
     person = 'null'
     for sub in detected:
       if sub['entity'] == 'person':

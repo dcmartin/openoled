@@ -1,4 +1,6 @@
 DEBUG
 MQTT_HOST
-listen.json
-server.json
+listen.sh.*.json
+server.sh.*.json
+listen.sh.*.out
+server.sh.*.out

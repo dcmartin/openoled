@@ -84,6 +84,7 @@ MQTT='{"host":"'${MQTT_HOST}'","port":'${MQTT_PORT}',"username":"'${MQTT_USERNAM
 missing=$(has_commands mosquitto_sub curl jq)
 if [ -z "${missing:-}" ]; then
   listen ${*} &
+  sleep 1
   echo '{"name":"'${0}'","pid":'$!',"motion":'"${MOTION}"',"oled":'"${OLED}"',"mqtt":'"${MQTT}"',"debug":'"${LOG}"'}' | jq '.' | tee ${0##*/}.json
 else
   echo "Commands: [ ${missing} ] missing; install" &> /dev/stderr

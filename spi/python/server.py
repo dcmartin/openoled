@@ -289,8 +289,6 @@ try:
     OLED.Device_Init()
     OLED.Clear_Screen()
     testPattern()
-    OLED.Clear_Screen()
-    clearEvent()
     webapp.run(debug=True,host=arg1,port=arg2)
 
 except:

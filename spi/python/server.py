@@ -31,6 +31,10 @@ def Display_Picture(File_Name):
 from flask import Flask, request, jsonify
 webapp = Flask('oled')
 
+###
+### TESTING
+###
+
 @webapp.route("/oled/v1/test/text", methods=['GET'])
 def Test_Text():
     image = Image.new("RGB", (OLED.SSD1351_WIDTH, OLED.SSD1351_HEIGHT), "BLACK")
@@ -175,8 +179,13 @@ def Test_Picture():
   Display_Picture("picture4.jpg")
   return ('{"success": true}}\n' % ())
 
-## LIBRARIES
+###
+### OLED functions
+###
 
+## LIBRARY
+
+# display image on SPI OLED display
 def displayImage(b64data):
   imageBytes = base64.b64decode(b64data)
   if imageBytes != 'null':
@@ -197,18 +206,26 @@ def displayImage(b64data):
   else:
     return null
 
+# clean the I2C display
+def clearEvent():
+  line1 = 'EVENT'
+  line2 = 'ENTITY'
+  line3 = 'COUNT'
+  command = './i2c/oled ' + json.dumps(line1) + ' ' + json.dumps(line2) + ' ' + json.dumps(line3)
+  os.system(command)
+  return 'true'
+
+# display event information on the I2C display
 def displayEvent(payload):
   line1 = 'NO EVENT'
   line2 = 'NO ENTITY'
   line3 = 'NOTHING'
-
   event = payload['event']
   if event != 'null':
     group = event['group']
     device = event['device']
     camera = event['camera']
     line1 = str(camera)
-
   detected = payload['detected']
   if detected is not None and len(detected) > 0:
     person = 'null'
@@ -219,46 +236,16 @@ def displayEvent(payload):
     if person != 'null':
       number = person['count']
       line2 = 'person(s): ' + str(number)
-
   count = payload['count']
   if count != 'null' and int(count) > 0:
     line3 = 'total: ' + str(count)
-
   command = './i2c/oled ' + json.dumps(line1) + ' ' + json.dumps(line2) + ' ' + json.dumps(line3)
   os.system(command)
   return 'true'
 
-## POST
+## API
 
-@webapp.route("/oled/v1/display/picture", methods=['POST'])
-def displayPicture():
-  json_data = request.get_json(force=True)
-  if json_data != 'null':
-    b64data = json_data['image']
-    if b64data != 'null':
-      imageBytes = base64.b64decode(b64data)
-      if imageBytes != 'null':
-        stream = BytesIO(imageBytes)
-        if stream != 'null':
-          image = Image.open(stream).convert("RGBA")
-          if image != 'null':
-            imageSmall = image.resize((128, 128), Image.ANTIALIAS)
-            if imageSmall != 'null':
-              OLED.Display_Image(imageSmall)
-              return ('{"success": true}\n' % ())
-            else:
-              return ('{"error": "image failed to resize"}\n' % ())
-          else:
-            return ('{"error": "image bytes failed to stream"}\n' % ())
-        else:
-          return ('{"error": "image string failed to decode"}\n' % ())
-      else:
-        return ('{"error": "image bytes null"}\n' % ())
-    else:
-      return ('{"error": "image string null"}\n' % ())
-  else:
-    return ('{"error": "no JSON data received"}\n' % ())
-
+# display annotated event on both SPI and I2C OLED displays
 @webapp.route("/oled/v1/display/annotated", methods=['POST'])
 def displayAnnotated():
   json_data = request.get_json(force=True)
@@ -302,6 +289,8 @@ try:
     OLED.Device_Init()
     OLED.Clear_Screen()
     testPattern()
+    OLED.Clear_Screen()
+    clearEvent()
     webapp.run(debug=True,host=arg1,port=arg2)
 
 except:

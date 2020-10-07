@@ -2,7 +2,16 @@
 # makefile
 ###
 
-default: server.sh.json
+ACLOCAL := $(shell v=$$(aclocal --version | head -1 | awk '{ print $$4 }') && echo $${v%.*})
+
+default: aclocal server.sh.json
+
+aclocal:
+ifneq ($(ACLOCAL),1.16)
+	@echo "Installing latest aclocal (v1.16); current version: ${ACLOCAL}"
+	wget http://mirrors.kernel.org/ubuntu/pool/main/a/automake-1.16/automake_1.16.1-4ubuntu6_all.deb
+	sudo dpkg -i automake_1.16.1-4ubuntu6_all.deb
+endif
 
 all: default listen.sh.json test
 
